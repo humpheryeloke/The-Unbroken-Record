@@ -43,4 +43,4 @@ Built with Python (pandas) for the analysis and a single self-contained HTML/SVG
 
 ---
 
-Built by [Humphery Eloke](https://github.com/humpheryeloke) as a self-directed portfolio project exploring public health surveillance data, alongside a separate [pharmacovigilance signal-detection project](https://github.com/humpheryeloke/-tirzepatide-faers-signal-detection).
+Built by [Humphery Eloke](https://github.com/humpheryeloke) as a self-directed portfolio project exploring public health surveillance data.

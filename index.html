@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Unbroken Record</title>
+<meta name="description" content="A data journalism essay on which countries recur every year in WHO's outbreak record, and which appear only once.">
+<style>
+/* Layout concept: a single-column surveillance-log essay — dark control-room ground,
+   data bands drawn as actual tally marks and bar ledgers rather than dashboard widgets.
+   Dark-first: this reads as a live case file, not a printed paper report. */
+:root{
+  --bg:#12161a;
+  --surface:#191f25;
+  --surface-2:#212a32;
+  --ink:#eceee8;
+  --ink-soft:#8f9a9f;
+  --accent:#ff5245;
+  --accent-2:#59b7c4;
+  --line:#2a333a;
+  --font-display:'Fraunces',Georgia,'Times New Roman',serif;
+  --font-body:'Public Sans','Segoe UI',Helvetica,Arial,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#eef0eb;
+    --surface:#e2e6dd;
+    --surface-2:#d7dccf;
+    --ink:#161c1f;
+    --ink-soft:#54605f;
+    --accent:#c4261a;
+    --accent-2:#176c78;
+    --line:#cad0c2;
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#eef0eb;
+  --surface:#e2e6dd;
+  --surface-2:#d7dccf;
+  --ink:#161c1f;
+  --ink-soft:#54605f;
+  --accent:#c4261a;
+  --accent-2:#176c78;
+  --line:#cad0c2;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0 0 auto;
+  height:env(safe-area-inset-top,0px);
+  z-index:10;
+  background:var(--bg);
+}
+.wrap{max-width:720px;margin:0 auto;padding-block:56px 80px}
+h1,h2,h3{font-family:var(--font-display);font-weight:600;text-wrap:balance;margin:0}
+p{margin:0;line-height:1.65;font-size:1.02rem}
+.lede{font-size:1.14rem;line-height:1.7}
+.eyebrow{
+  font-family:var(--font-mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:14px;display:block;
+}
+.stack{display:flex;flex-direction:column;gap:18px}
+section{margin-top:64px}
+section:first-of-type{margin-top:0}
+.hero h1{font-size:clamp(2.4rem,8vw,3.6rem);line-height:1.05;letter-spacing:-.01em}
+.hero .lede{margin-top:20px;max-width:58ch}
+.statline{
+  margin-top:40px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding-block:22px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;
+}
+.statline .num{font-family:var(--font-mono);font-size:3.2rem;font-weight:700;color:var(--accent);line-height:1}
+.statline .label{font-size:.95rem;color:var(--ink-soft);max-width:34ch}
+.yearticks{display:flex;flex-wrap:wrap;gap:4px;margin-top:18px}
+.yeartick{
+  width:18px;height:18px;border-radius:3px;background:var(--accent);
+  flex:0 0 auto;
+}
+.yeartick-row-label{font-family:var(--font-mono);font-size:.68rem;color:var(--ink-soft);margin-top:10px;letter-spacing:.04em}
+h2{font-size:clamp(1.5rem,4vw,1.9rem);margin-bottom:14px}
+h2 .no{font-family:var(--font-mono);font-size:.78rem;color:var(--accent-2);display:block;margin-bottom:6px;letter-spacing:.08em}
+.chart-card{
+  background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  padding:22px 20px 18px;margin-top:22px;overflow-x:auto;
+}
+.chart-caption{font-family:var(--font-mono);font-size:.72rem;color:var(--ink-soft);margin-top:12px;letter-spacing:.02em}
+svg text{font-family:var(--font-mono)}
+svg .axis{fill:var(--ink-soft)}
+svg .barlabel{fill:var(--ink)}
+.oneoff-list{list-style:none;margin:20px 0 0;padding:0;display:grid;gap:0;border-top:1px solid var(--line)}
+.oneoff-list li{
+  display:flex;justify-content:space-between;gap:12px;padding:10px 2px;
+  border-bottom:1px solid var(--line);font-size:.92rem;
+}
+.oneoff-list .country{font-weight:600}
+.oneoff-list .meta{font-family:var(--font-mono);font-size:.78rem;color:var(--ink-soft);text-align:right;white-space:nowrap}
+.callout{
+  background:var(--surface-2);border-left:3px solid var(--accent-2);padding:16px 18px;
+  margin-top:22px;border-radius:0 3px 3px 0;
+}
+.callout p{font-size:.94rem}
+.callout .tag{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);display:block;margin-bottom:6px}
+.quote{
+  font-family:var(--font-display);font-size:1.3rem;font-style:italic;line-height:1.5;
+  margin-top:26px;padding-left:18px;border-left:2px solid var(--accent);color:var(--ink);
+}
+footer{margin-top:84px;border-top:1px solid var(--line);padding-top:28px}
+footer h3{font-size:1rem;margin-bottom:10px}
+footer p{font-size:.85rem;color:var(--ink-soft)}
+footer .methodology{display:grid;gap:10px;margin-top:4px}
+.sourceline{font-family:var(--font-mono);font-size:.75rem;color:var(--ink-soft);margin-top:30px}
+a{color:var(--accent)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-family:var(--font-mono);font-size:.7rem;color:var(--ink-soft)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+@media (max-width:480px){
+  .statline .num{font-size:2.4rem}
+  .yeartick{width:13px;height:13px}
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+</head>
+<body>
+
+<div class="wrap">
+
+  <section class="hero">
+    <span class="eyebrow">WHO Disease Outbreak News &middot; 1996&ndash;2025</span>
+    <h1>The Unbroken Record</h1>
+    <p class="lede">Two hundred and twenty-eight countries and territories reported a disease outbreak to the World Health Organization somewhere in three decades of records. Only one of them never had a year off.</p>
+
+    <div class="statline">
+      <div class="num">30 / 30</div>
+      <div class="label">Years from 1996 to 2025 in which the Democratic Republic of the Congo filed at least one outbreak report. Every single one.</div>
+    </div>
+    <div class="yearticks" id="drc-ticks" aria-hidden="true"></div>
+    <div class="yeartick-row-label">1996 &rarr; 2025, one tile per year, unbroken</div>
+  </section>
+
+  <section id="scale">
+    <h2><span class="no">01</span>What "never stops" actually means</h2>
+    <p>Set aside COVID-19's own dashboard entries, which are a separate reporting stream grafted onto this dataset from 2020 on, and the record holds 2,352 outbreak events across those 228 places. Spread evenly, a typical country would show up in most years. It doesn't work that way. The typical country in this record shows up in six years out of thirty &mdash; a single outbreak, acknowledged, and then a long silence before the next one.</p>
+    <p style="margin-top:14px">A much smaller group never goes quiet. Twenty-nine countries appear in fifteen years or more &mdash; over half the span on record. They are not the places WHO visits most often by chance. They are the places that are, structurally, always somewhere in this ledger.</p>
+    <div class="chart-card">
+      <svg id="hist-chart" viewBox="0 0 620 260" width="100%" role="img" aria-label="Histogram of years active per country"></svg>
+      <div class="chart-caption">Years a country appears in the WHO DON record, 1996&ndash;2025 (228 countries and territories, COVID-19 excluded)</div>
+    </div>
+  </section>
+
+  <section id="chronic">
+    <h2><span class="no">02</span>The standing list</h2>
+    <p>Rank every country by how many of the thirty years it shows up, and the same names keep surfacing for different reasons. DRC's record is cholera first, then Ebola, then yellow fever, then mpox, then polio &mdash; twenty different diseases altogether, a country that is simply never between outbreaks. China's record is almost one disease, repeated: identified zoonotic influenza accounts for half its appearances. Niger, Chad, and Burkina Faso share the Sahel's meningitis belt. Uganda and DRC share a filovirus corridor. The United States, the United Kingdom, and France are there for a different reason again &mdash; they're the places that keep filing on pandemic-potential flu findings that most countries don't bother reporting as a DON at all.</p>
+    <div class="chart-card">
+      <svg id="rank-chart" viewBox="0 0 620 440" width="100%" role="img" aria-label="Top 12 countries ranked by years active"></svg>
+      <div class="chart-caption">Years active out of 30 (1996&ndash;2025), with the leading recurring disease for each country</div>
+    </div>
+  </section>
+
+  <section id="oneoff">
+    <h2><span class="no">03</span>The other end of the list</h2>
+    <p>Sixteen countries appear in this record exactly once. Read as a list of places WHO rarely worries about, it would be a misreading. Eight of those sixteen appearances landed in a single year &mdash; 2009 &mdash; when pandemic influenza reached territories that have no other outbreak history in this dataset at all: the Isle of Man, Guernsey, Jersey, the Falkland Islands, Andorra, Monaco, Botswana, Eswatini.</p>
+    <div class="callout">
+      <span class="tag">What this is actually showing</span>
+      <p>That isn't sixteen separate stories about sixteen quiet countries. It's what one truly global pandemic looks like inside a ledger built from WHO alerts: the one disease that reaches almost everywhere at once, including places with no other entry in thirty years, shows up as a cluster of "one-off" countries that have nothing else in common.</p>
+    </div>
+    <ul class="oneoff-list" id="oneoff-list"></ul>
+  </section>
+
+  <section id="mpox">
+    <h2><span class="no">04</span>A case study in "emerging"</h2>
+    <p>Mpox is usually described as an emerging disease, which makes 2022 sound like the year it appeared. The record says otherwise. It shows up once in 1997, in a single country. Then nothing &mdash; not one WHO report mentions it anywhere on earth for the next nineteen years. It resurfaces quietly in 2016, one or two countries a year, never more, through 2021. Then in 2022: fifty-three countries report it within twelve months.</p>
+    <div class="chart-card">
+      <svg id="mpox-chart" viewBox="0 0 620 230" width="100%" role="img" aria-label="Mpox reports by year, 1996 to 2026"></svg>
+      <div class="chart-caption">Countries reporting mpox (monkeypox) per year &mdash; a 19-year gap, a quiet return, then two separate spikes</div>
+    </div>
+    <p style="margin-top:18px">The disease didn't jump from zero to global in a single step. It had been present at low background levels, one or two reports a year, since 2016. What changed in 2022 &mdash; whether it was the virus, or the watchfulness, or both at once &mdash; isn't something an event log can separate on its own. What the record can show is that the gap closed twice: 2022 at fifty-three countries, and a second wave in 2025 at thirty-five, a recurrence the 2022 story alone didn't predict.</p>
+    <div class="quote">"Emerging" in this record usually means "the silence just ended," not "the disease is new."</div>
+  </section>
+
+  <section id="closing">
+    <h2><span class="no">05</span>What the standing list is actually measuring</h2>
+    <p>Being on the chronic list is not, by itself, a measure of danger. This dataset has no case counts, no deaths, no severity scores &mdash; it is a log of when WHO issued a report, not a log of what the disease did once it arrived. A country appears on the standing list because it has three things at once: an endemic disease that returns on its own schedule, a surveillance system built to catch it, and a government that keeps filing with WHO even when nothing extraordinary is happening. A country can go thirty years without a single DON and that can mean the outbreak never came, or it can mean the reporting channel was never as active to begin with. The dataset cannot tell those two apart, and neither can this piece.</p>
+    <p style="margin-top:14px">What three decades of this record does show plainly is that it is a map of reporting geography as much as outbreak geography. The paper trail is part of the story, not just the vehicle for it.</p>
+  </section>
+
+  <footer>
+    <h3>Methodology</h3>
+    <div class="methodology">
+      <p><strong>Source:</strong> WHO Disease Outbreak News index, 1996&ndash;2026, via the Humanitarian Data Exchange. One row represents one disease&ndash;country&ndash;year outbreak event, not a case or death count.</p>
+      <p><strong>Exclusions:</strong> COVID-19 "Coronavirus dashboard" entries (1,214 rows, 2020&ndash;2026) are removed throughout &mdash; they come from a separate ongoing reporting stream grafted onto the dataset, not individual DON bulletins, and would swamp every comparison if left in. 2026 is excluded as a partial year still being filed.</p>
+      <p><strong>Unit of analysis:</strong> distinct country&ndash;year presence &mdash; whether a country shows up in the record for a given year at all, not how many reports, cases, or deaths that year produced.</p>
+      <p><strong>Known limitation:</strong> more reporting in recent years reflects, at least in part, better surveillance and a larger WHO reporting apparatus, not necessarily more outbreaks occurring. Reported counts are reporting counts.</p>
+    </div>
+    <p class="sourceline">Independent analysis of the public WHO DON dataset &middot; built as a self-directed data journalism project</p>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  function el(tag, attrs, parent){
+    const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function cssvar(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  // ---- Year ticks for DRC hero ----
+  const ticksWrap = document.getElementById('drc-ticks');
+  for (let y = 1996; y <= 2025; y++){
+    const d = document.createElement('div');
+    d.className = 'yeartick';
+    d.title = String(y);
+    ticksWrap.appendChild(d);
+  }
+
+  // ---- Histogram: distribution of years-active buckets ----
+  const histData = [
+    {label:'1 yr', value:16},
+    {label:'2 yrs', value:17},
+    {label:'3–5', value:79},
+    {label:'6–10', value:59},
+    {label:'11–15', value:34},
+    {label:'16–20', value:15},
+    {label:'21–25', value:6},
+    {label:'26–30', value:2}
+  ];
+  (function drawHist(){
+    const svg = document.getElementById('hist-chart');
+    const W = 620, H = 260, padL = 36, padR = 10, padT = 14, padB = 44;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const maxV = Math.max(...histData.map(d=>d.value));
+    const bw = plotW / histData.length;
+    const ink = cssvar('--ink'), inkSoft = cssvar('--ink-soft'), accent = cssvar('--accent'), line = cssvar('--line');
+
+    // gridline + axis
+    [0,20,40,60,80].forEach(v=>{
+      const y = padT + plotH - (v/maxV)*plotH;
+      el('line',{x1:padL,x2:W-padR,y1:y,y2:y,stroke:line,'stroke-width':1},svg);
+      el('text',{x:padL-8,y:y+4,'text-anchor':'end','font-size':10,class:'axis'},svg).textContent = v;
+    });
+
+    histData.forEach((d,i)=>{
+      const x = padL + i*bw + bw*0.18;
+      const w = bw*0.64;
+      const h = (d.value/maxV)*plotH;
+      const y = padT + plotH - h;
+      el('rect',{x,y,width:w,height:h,fill:accent,rx:2},svg);
+      el('text',{x:x+w/2,y:y-6,'text-anchor':'middle','font-size':11,class:'barlabel','font-weight':600},svg).textContent = d.value;
+      el('text',{x:x+w/2,y:H-padB+18,'text-anchor':'middle','font-size':10,class:'axis'},svg).textContent = d.label;
+    });
+    el('text',{x:padL,y:14,'font-size':10,class:'axis'},svg).textContent = 'countries';
+  })();
+
+  // ---- Ranked bar chart: top 12 chronic countries ----
+  const rankData = [
+    {c:'DR Congo', years:30, events:73, disease:'Cholera (13)'},
+    {c:'China', years:26, events:43, disease:'Zoonotic influenza (21)'},
+    {c:'Nigeria', years:24, events:53, disease:'Cholera / Yellow fever / Lassa (8 ea.)'},
+    {c:'United States', years:23, events:47, disease:'Zoonotic influenza (10)'},
+    {c:'Niger', years:22, events:33, disease:'Cholera / Meningitis (7 ea.)'},
+    {c:'Uganda', years:22, events:33, disease:'Ebola (7)'},
+    {c:'Brazil', years:22, events:39, disease:'Yellow fever (10)'},
+    {c:'Chad', years:21, events:35, disease:'Meningitis (7)'},
+    {c:'France', years:19, events:37, disease:'Zoonotic influenza (5)'},
+    {c:'Burkina Faso', years:19, events:28, disease:'Meningitis (9)'},
+    {c:'Sudan', years:19, events:35, disease:'Meningitis (6)'},
+    {c:'United Kingdom', years:19, events:35, disease:'Zoonotic influenza (7)'}
+  ];
+  (function drawRank(){
+    const svg = document.getElementById('rank-chart');
+    const W = 620, H = 440, padL = 150, padR = 60, padT = 10, padB = 10;
+    const rowH = (H - padT - padB) / rankData.length;
+    const plotW = W - padL - padR;
+    const maxV = 30;
+    const accent = cssvar('--accent'), ink = cssvar('--ink'), inkSoft = cssvar('--ink-soft');
+
+    rankData.forEach((d,i)=>{
+      const y = padT + i*rowH;
+      const barH = rowH*0.46;
+      const barY = y + (rowH-barH)/2;
+      const w = (d.years/maxV)*plotW;
+      el('text',{x:padL-10,y:barY+barH*0.72,'text-anchor':'end','font-size':12,class:'barlabel','font-weight':600},svg).textContent = d.c;
+      el('rect',{x:padL,y:barY,width:plotW,height:barH,fill:'none',stroke:inkSoft,'stroke-opacity':0.25,rx:2},svg);
+      el('rect',{x:padL,y:barY,width:w,height:barH,fill:accent,rx:2},svg);
+      el('text',{x:padL+w+8,y:barY+barH*0.72,'font-size':11,class:'barlabel','font-weight':700},svg).textContent = d.years+'/30';
+      el('text',{x:padL,y:barY+barH+13,'font-size':9.5,class:'axis'},svg).textContent = d.disease + ' · ' + d.events + ' events total';
+    });
+  })();
+
+  // ---- One-off country list ----
+  const oneoff = [
+    {c:'Isle of Man', y:2009, d:'Zoonotic influenza'},
+    {c:'Guernsey', y:2009, d:'Zoonotic influenza'},
+    {c:'Jersey', y:2009, d:'Zoonotic influenza'},
+    {c:'Falkland Islands', y:2009, d:'Zoonotic influenza'},
+    {c:'Andorra', y:2009, d:'Zoonotic influenza'},
+    {c:'Monaco', y:2009, d:'Zoonotic influenza'},
+    {c:'Botswana', y:2009, d:'Zoonotic influenza'},
+    {c:'Eswatini', y:2009, d:'Zoonotic influenza'},
+    {c:'Macao', y:2019, d:'Measles'},
+    {c:'Gibraltar', y:2022, d:'Mpox'},
+    {c:'Anguilla', y:2023, d:'Dengue fever'},
+    {c:'Eritrea', y:2024, d:'Dengue fever'},
+    {c:'Belarus', y:2025, d:'Zoonotic influenza'},
+    {c:'Northern Mariana Islands', y:2025, d:'Zoonotic influenza'},
+    {c:'Niue', y:2025, d:'Zoonotic influenza'},
+    {c:'Uzbekistan', y:2025, d:'Zoonotic influenza'}
+  ];
+  const list = document.getElementById('oneoff-list');
+  oneoff.forEach(d=>{
+    const li = document.createElement('li');
+    const left = document.createElement('span');
+    left.className = 'country';
+    left.textContent = d.c;
+    const right = document.createElement('span');
+    right.className = 'meta';
+    right.textContent = d.y + ' · ' + d.d;
+    li.appendChild(left); li.appendChild(right);
+    list.appendChild(li);
+  });
+
+  // ---- Mpox timeline ----
+  const mpoxData = [];
+  for (let y=1996;y<=2026;y++) mpoxData.push({y, v:0});
+  const mpoxVals = {1997:1,2016:1,2017:1,2018:2,2019:1,2020:1,2021:2,2022:53,2023:1,2024:8,2025:35,2026:2};
+  mpoxData.forEach(d=>{ if (mpoxVals[d.y]) d.v = mpoxVals[d.y]; });
+  (function drawMpox(){
+    const svg = document.getElementById('mpox-chart');
+    const W = 620, H = 230, padL = 30, padR = 10, padT = 14, padB = 46;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const maxV = 53;
+    const bw = plotW / mpoxData.length;
+    const accent = cssvar('--accent'), accent2 = cssvar('--accent-2'), line = cssvar('--line'), inkSoft = cssvar('--ink-soft');
+
+    [0,10,20,30,40,50].forEach(v=>{
+      const y = padT + plotH - (v/maxV)*plotH;
+      el('line',{x1:padL,x2:W-padR,y1:y,y2:y,stroke:line,'stroke-width':1},svg);
+      el('text',{x:padL-6,y:y+3,'text-anchor':'end','font-size':9,class:'axis'},svg).textContent = v;
+    });
+
+    // gap shading 1998-2015
+    const gapStart = padL + (1998-1996)*bw;
+    const gapEnd = padL + (2016-1996)*bw;
+    el('rect',{x:gapStart,y:padT,width:gapEnd-gapStart,height:plotH,fill:inkSoft,'fill-opacity':0.08},svg);
+
+    mpoxData.forEach((d,i)=>{
+      const x = padL + i*bw + bw*0.12;
+      const w = Math.max(bw*0.76, 1.5);
+      const h = (d.v/maxV)*plotH;
+      const y = padT + plotH - h;
+      const fill = (d.y===2022||d.y===2025) ? accent : accent2;
+      el('rect',{x,y,width:w,height:Math.max(h,1),fill, rx:1, 'fill-opacity': d.v>0?1:0},svg);
+      if (d.y % 5 === 0 || d.y===1997 || d.y===2016 || d.y===2022 || d.y===2025 || d.y===1996 || d.y===2026){
+        el('text',{x:x+w/2,y:H-padB+16,'text-anchor':'middle','font-size':9,class:'axis'},svg).textContent = d.y;
+      }
+      if (d.v >= 8){
+        el('text',{x:x+w/2,y:y-6,'text-anchor':'middle','font-size':10,class:'barlabel','font-weight':700},svg).textContent = d.v;
+      }
+    });
+    el('text',{x:(gapStart+gapEnd)/2,y:padT+plotH/2,'text-anchor':'middle','font-size':10,class:'axis','font-style':'italic'},svg).textContent = '19-year gap';
+  })();
+
+})();
+</script>
+</body>
+</html>
